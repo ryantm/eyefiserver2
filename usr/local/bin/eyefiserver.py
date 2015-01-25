@@ -63,13 +63,8 @@ DEFAULTS = {'upload_uid': '-1', 'upload_gid': '-1', 'geotag_enable': '0'}
 import math
 
 class Daemon:
-    """
-    A generic daemon class.
-
-    Usage: subclass the Daemon class and override the run() method
-    """
+    """The eyefiserver daemon class."""
     def __init__(self,
-                 pidfile,
                  stdin='/dev/null',
                  stdout='/dev/null',
                  stderr='/dev/null',
@@ -80,7 +75,7 @@ class Daemon:
             self.stderr = stderr
         self.stdin = stdin
         self.stdout = stdout
-        self.pidfile = pidfile
+        self.pidfile = "/tmp/eyefiserver.pid"
 
     def daemonize(self):
         """
@@ -258,10 +253,8 @@ class Daemon:
             return 1
 
     def run(self):
-        """You should override this method when you subclass Daemon. It will
-        be called after the process has been daemonized by start() or
-        restart().
-        """
+        runEyeFi()
+
 
 
 """General architecture notes
@@ -273,7 +266,6 @@ Starting this server creates a listener on port 59278. I use the
 BaseHTTPServer class included with Python. I look for specific
 POST/GET request URLs and execute functions based on those URLs.
 """
-
 
 # Create the main logger
 eyeFiLogger = logging.Logger("eyeFiLogger",logging.DEBUG)
@@ -965,44 +957,71 @@ def runEyeFi():
     eyeFiLogger.info("Eye-Fi server started listening on port " + str(server_address[1]))
     eyeFiServer.serve_forever()
 
-class MyDaemon(Daemon):
-    def run(self):
+
+class Commands():
+
+    @staticmethod
+    def try_run_command(command_arg):
+        command = Commands.commands[command_arg]
+        if command:
+            return command()
+        else:
+            return unknown_command()
+
+    def start():
+        daemon = Daemon()
+        result = daemon.start()
+        if result!=1:
+            print "EyeFiServer started"
+        return result
+
+    def stop():
+        daemon = Daemon()
+        result = daemon.stop()
+        if result!=1:
+            print "EyeFiServer stopped"
+        return result
+
+    def restart():
+        daemon = Daemon()
+        result = daemon.restart()
+        if result!=1:
+            print "EyeFiServer restarted"
+        return result
+
+    def reload():
+        daemon = Daemon()
+        result = daemon.reload()
+        return result
+
+    def status():
+        daemon = Daemon()
+        result = daemon.status()
+        if result==1:
+            print "EyeFiServer is not running"
+        else:
+            print "EyeFiServer is running"
+        return result
+
+    def instance():
         runEyeFi()
+        return 0
+
+    def unknown_command():
+        print "Unknown command"
+        return 2
+
+    commands = {"start" : start,
+                "stop" : stop,
+                "restart" : restart,
+                "reload" : reload,
+                "status" : status,
+                "instance" : instance
+    }
 
 def main():
-    pid_file = '/tmp/eyefiserver.pid'
-    result = 0
     if len(sys.argv) > 2:
-        if 'start' == sys.argv[1]:
-            daemon = MyDaemon(pid_file)
-            result = daemon.start()
-            if result!=1:
-                print "EyeFiServer started"
-        elif 'stop' == sys.argv[1]:
-            daemon = MyDaemon(pid_file)
-            result = daemon.stop()
-            if result!=1:
-                print "EyeFiServer stopped"
-        elif 'restart' == sys.argv[1]:
-            daemon = MyDaemon(pid_file)
-            result = daemon.restart()
-            if result!=1:
-                print "EyeFiServer restarted"
-        elif 'reload' == sys.argv[1]:
-            daemon = MyDaemon(pid_file)
-            result = daemon.reload()
-        elif 'status' == sys.argv[1]:
-            daemon = MyDaemon(pid_file)
-            result = daemon.status()
-            if result==1:
-                print "EyeFiServer is not running"
-            else:
-                print "EyeFiServer is running"
-        elif 'instance' == sys.argv[1]:
-            runEyeFi()
-        else:
-            print "Unknown command"
-            sys.exit(2)
+        result = Commands.try_run_command(sys.argv[1])
         sys.exit(result)
     else:
         print ("usage: %s "
