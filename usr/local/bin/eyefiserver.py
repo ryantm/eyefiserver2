@@ -371,6 +371,8 @@ class EyeFiServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
             self.stop()
         except:
             eyeFiLogger.error("Error stopping server")
+        if instance:
+          sys.exit(0);
 
     def server_bind(self):
 
@@ -987,6 +989,7 @@ class MyDaemon(Daemon):
     def run(self):
         runEyeFi()
 
+instance = False
 def main():
     pid_file = '/tmp/eyefiserver.pid'
     result = 0
@@ -1017,6 +1020,8 @@ def main():
             else:
                 print "EyeFiServer is running"
         elif 'instance' == sys.argv[1]:
+            global instance
+            instance = True
             runEyeFi()
         else:
             print "Unknown command"
