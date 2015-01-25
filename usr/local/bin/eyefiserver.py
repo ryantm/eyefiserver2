@@ -1005,7 +1005,11 @@ def main():
             sys.exit(2)
         sys.exit(result)
     else:
-        print "usage: %s start|stop|restart|reload|status|instance conf_file log_file" % sys.argv[0]
+        print ("usage: %s "
+               "command "
+               "conf_file log_file" % sys.argv[0])
+        print
+        print "commands: start|stop|restart|reload|status|instance"
         sys.exit(2)
 
 if __name__ == "__main__":
