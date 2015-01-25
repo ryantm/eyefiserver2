@@ -55,7 +55,6 @@ import atexit
 from signal import SIGTERM
 import signal
 
-#pike
 from datetime import datetime
 import ConfigParser
 
@@ -411,7 +410,6 @@ class EyeFiServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
 
 class EyeFiRequestHandler(BaseHTTPRequestHandler):
 
-    # pike: these seem unused ?
     protocol_version = 'HTTP/1.1'
     sys_version = ""
     server_version = "Eye-Fi Agent/2.0.4.0 (Windows XP SP2)"
@@ -637,7 +635,6 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
 
         imageTarfileName = handler.extractedElements["filename"]
 
-        #pike
         uid = self.server.config.getint('EyeFiServer','upload_uid')
         gid = self.server.config.getint('EyeFiServer','upload_gid')
         file_mode = self.server.config.get('EyeFiServer','upload_file_mode')
