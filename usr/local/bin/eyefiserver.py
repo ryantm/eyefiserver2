@@ -91,8 +91,6 @@ class Daemon:
         try:
             pid = os.fork()
             if pid > 0:
-                # exit first parent
-#                            sys.exit(0)
                 return 0
         except OSError, e:
             sys.stderr.write("fork #1 failed: %d (%s)\n" \
@@ -108,8 +106,6 @@ class Daemon:
         try:
             pid = os.fork()
             if pid > 0:
-                # exit from second parent
-#                            sys.exit(0)
                 return 1
         except OSError, e:
             sys.stderr.write("fork #2 failed: %d (%s)\n" \
@@ -262,26 +258,20 @@ class Daemon:
             return 1
 
     def run(self):
+        """You should override this method when you subclass Daemon. It will
+        be called after the process has been daemonized by start() or
+        restart().
         """
-        You should override this method when you subclass Daemon. It will be called after the process has been
-        daemonized by start() or restart().
-        """
 
 
-"""
-General architecture notes
+"""General architecture notes
 
+This is a standalone Eye-Fi Server that is designed to take the place
+of the Eye-Fi Manager.
 
-This is a standalone Eye-Fi Server that is designed to take the place of the Eye-Fi Manager.
-
-
-Starting this server creates a listener on port 59278. I use the BaseHTTPServer class included
-with Python. I look for specific POST/GET request URLs and execute functions based on those
-URLs.
-
-
-
-
+Starting this server creates a listener on port 59278. I use the
+BaseHTTPServer class included with Python. I look for specific
+POST/GET request URLs and execute functions based on those URLs.
 """
 
 
@@ -310,7 +300,8 @@ class EyeFiContentHandler(ContentHandler):
     # These are the element names that I want to parse out of the XML
     elementNamesToExtract = ["macaddress","cnonce","transfermode","transfermodetimestamp","fileid","filename","filesize","filesignature"]
 
-    # For each of the element names I create a dictionary with the value to False
+    # For each of the element names I create a dictionary with the
+    # value to False
     elementsToExtract = {}
 
     # Where to put the extracted values
@@ -326,15 +317,15 @@ class EyeFiContentHandler(ContentHandler):
 
     def startElement(self, name, attributes):
 
-        # If the name of the element is a key in the dictionary elementsToExtract
-        # set the value to True
+        # If the name of the element is a key in the dictionary
+        # elementsToExtract set the value to True
         if name in self.elementsToExtract:
             self.elementsToExtract[name] = True
 
     def endElement(self, name):
 
-        # If the name of the element is a key in the dictionary elementsToExtract
-        # set the value to False
+        # If the name of the element is a key in the dictionary
+        # elementsToExtract set the value to False
         if name in self.elementsToExtract:
             self.elementsToExtract[name] = False
 
@@ -396,17 +387,10 @@ class EyeFiServer(SocketServer.ThreadingMixIn, BaseHTTPServer.HTTPServer):
     def stop(self):
         self.run = False
 
-    # alt serve_forever method for python <2.6
-    # because we want a shutdown mech ..
-    #def serve(self):
-    #  while self.run:
-    #    self.handle_request()
-    #  self.socket.close()
-
-
 
 # This class is responsible for handling HTTP requests passed to it.
-# It implements the two most common HTTP methods, do_GET() and do_POST()
+# It implements the two most common HTTP methods, do_GET() and
+# do_POST()
 
 class EyeFiRequestHandler(BaseHTTPRequestHandler):
 
@@ -434,7 +418,8 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
 
             self.send_response(200)
             self.send_header('Content-type','text/html')
-            # I should be sending a Content-Length header with HTTP/1.1 but I am being lazy
+            # I should be sending a Content-Length header with
+            # HTTP/1.1 but I am being lazy
             # self.send_header('Content-length', '123')
             self.end_headers()
             self.wfile.write(self.client_address)
@@ -453,7 +438,8 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
             SOAPAction = ""
             contentLength = ""
 
-            # Loop through all the request headers and pick out ones that are relevant
+            # Loop through all the request headers and pick out ones
+            # that are relevant
 
             eyeFiLogger.debug("Headers received in POST request:")
             for headerName in self.headers.keys():
@@ -470,7 +456,6 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
 
             # Read contentLength bytes worth of data
             eyeFiLogger.debug("Attempting to read " + str(contentLength) + " bytes of data")
-            # postData = self.rfile.read(contentLength)
             try:
                 from StringIO import StringIO
                 import tempfile
@@ -491,8 +476,8 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
 
             eyeFiLogger.debug("Finished reading " + str(contentLength) + " bytes of data")
 
-            # Perform action based on path and SOAPAction
-            # A SOAPAction of StartSession indicates the beginning of an EyeFi
+            # Perform action based on path and SOAPAction A SOAPAction
+            # of StartSession indicates the beginning of an EyeFi
             # authentication request
             if((self.path == "/api/soap/eyefilm/v1") and (SOAPAction == "\"urn:StartSession\"")):
                 eyeFiLogger.debug("Got StartSession request")
@@ -513,8 +498,8 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
                 self.wfile.flush()
                 self.handle_one_request()
 
-            # GetPhotoStatus allows the card to query if a photo has been uploaded
-            # to the server yet
+            # GetPhotoStatus allows the card to query if a photo has
+            # been uploaded to the server yet
             if((self.path == "/api/soap/eyefilm/v1") and (SOAPAction == "\"urn:GetPhotoStatus\"")):
                 eyeFiLogger.debug("Got GetPhotoStatus request")
 
@@ -535,7 +520,8 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
                 self.wfile.flush()
 
 
-            # If the URL is upload and there is no SOAPAction the card is ready to send a picture to me
+            # If the URL is upload and there is no SOAPAction the card
+            # is ready to send a picture to me
             if((self.path == "/api/soap/eyefilm/v1/upload") and (SOAPAction == "")):
                 eyeFiLogger.debug("Got upload request")
                 response = self.uploadPhoto(postData)
@@ -598,8 +584,9 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         return doc.toxml(encoding="UTF-8")
 
 
-    # Handles receiving the actual photograph from the card.
-    # postData will most likely contain multipart binary post data that needs to be parsed
+    # Handles receiving the actual photograph from the card.  postData
+    # will most likely contain multipart binary post data that needs
+    # to be parsed
     def uploadPhoto(self,postData):
 
         # Take the postData string and work with it as if it were a file object
@@ -617,8 +604,6 @@ class EyeFiRequestHandler(BaseHTTPRequestHandler):
         boundary = headerParameters[-1].split("=")
         boundary = boundary[1].strip()
         eyeFiLogger.debug("Extracted boundary: " + boundary)
-
-        # eyeFiLogger.debug("uploadPhoto postData: " + postData)
 
         # Parse the multipart/form-data
         form = cgi.parse_multipart(postDataInMemoryFile, {"boundary":boundary,"content-disposition":self.headers.getheaders('content-disposition')})
